@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py_efficient_payer"
+version = "0.0.0.1"
+dependencies = [
+"panel",
+"structlog",
+"spyder-kernels==3.0.*",
+"pytest-json-report==1.5.0",
+"pytest-html==4.1.1",
+]
+
+requires-python = "~=3.12"
+authors = [
+  {name = "Brendan Sloan", email = "brendan.sloan@live.co.uk"},
+]
+maintainers = [
+  {name = "Brendan Sloan", email = "brendan.sloan@live.co.uk"}
+]
+description = "A toolset for getting best use of of income and weighing PAYE vs. contractor"
+readme = "README.md"
+license = {file = "LICENCE.md"}
+keywords = ["PAYE", "contractor", "limited company", "money management"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[project.optional-dependencies]
+
+
+[project.urls]
+Homepage = "https://example.com"
+Documentation = "https://readthedocs.org"
+Repository = "https://github.com/me/spam.git"
+"Bug Tracker" = "https://github.com/Amiga501/py_efficient_payer/issues"
+Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+[project.scripts]
+
+
+[project.gui-scripts]
+
+
+[project.entry-points."spam.magical"]
