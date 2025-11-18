@@ -4,7 +4,7 @@ Created on Tue Nov 11 21:19:09 2025
 
 @author: Brendan
 
-Informal tests for core.paye.py
+Tests for core.paye.py
 
 Will need modified to run in CI pipe I'd think...
 
