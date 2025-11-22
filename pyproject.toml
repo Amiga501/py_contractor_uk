@@ -20,7 +20,7 @@ authors = [
 maintainers = [
   {name = "Brendan Sloan", email = "brendan.sloan@live.co.uk"}
 ]
-description = "A toolset for getting best use of of income and weighing PAYE vs. contractor"
+description = "Contractor management aids"
 readme = "README.md"
 license = {file = "LICENCE.md"}
 keywords = ["PAYE", "contractor", "limited company", "money management"]
