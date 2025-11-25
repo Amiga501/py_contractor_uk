@@ -43,11 +43,56 @@ class DashLogger:
                               "dashboard.log")),
             )
         self.logger = logger.get_logger()
+        
+        
+# -----------------------------------------------------------------------------
+class HmrcLogger:
+    """!
+    Logger for interactions with HMRC APIs
+    
+    """
+    
+    # -------------------------------------------------------------------------
+    def __init__(self):
+        """!
+        **Instance the logger**
+        
+        Consumer can access via the class handle's "logger" attr
+        
+        """
+        logger = Logger(
+            logger_name="hmrc",
+            log_file=str(Path(Config.LOG_DIR, 
+                              "hmrc.log")),
+            )
+        self.logger = logger.get_logger()
+
+
+# -----------------------------------------------------------------------------
+class _TestLogger:
+    """!
+    Logger for tests
+    
+    """
+    
+    # -------------------------------------------------------------------------
+    def __init__(self):
+        """!
+        **Instance the logger**
+        
+        Consumer can access via the class handle's "logger" attr
+        
+        """
+        logger = Logger(
+            logger_name="tests",
+            log_file=str(Path(Config.LOG_DIR, 
+                              "tests.log")),
+            )
+        self.logger = logger.get_logger()
        
 
 # -----------------------------------------------------------------------------
-@pytest.mark.skip(reason="This is a logger, not a test class")
-class TestLogger:
+class PrototypeTestLogger:
     """!
     Logger for tests
     

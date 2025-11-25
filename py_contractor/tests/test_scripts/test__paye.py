@@ -19,7 +19,7 @@ import pytest  # Also needs pytest-html installed
 
 # %% py_contractor imports
 from py_contractor.config.config import Config
-from py_contractor.config.loggers import TestLogger
+from py_contractor.config.loggers import _TestLogger
 
 from py_contractor.tests.lib.misc_test import MiscTest
 
@@ -29,7 +29,7 @@ from py_contractor.core.paye import Paye
 
 # %% Module level config
 
-LOGGER = TestLogger().logger
+LOGGER = _TestLogger().logger
 
 # %% Functions
 

@@ -10,14 +10,17 @@ This module outlines the database tables
 # %% Global imports
 from collections.abc import Callable
 from datetime import date, datetime
+from decimal import Decimal
 from sqlalchemy import ( 
     Boolean,
     Column, 
+    CheckConstraint,
     Date,
     DateTime,
     Float, 
     ForeignKey, 
     Integer, 
+    Numeric,
     String,
     )
 from sqlalchemy.orm import ( 
@@ -255,10 +258,10 @@ class ContractorCompany:
         comment="The email of the director of the contracting company",
         )
     
-    vat_number: Mapped[str] = mapped_column(
+    vat_registration_number: Mapped[str] = mapped_column(
         String,
-        comment="The vat number of the contracting company, leave empty if not"
-        " VAT registered",
+        comment="The vat registration number (VRN) of the contracting company,"
+        " leave empty if not VAT registered",
         nullable=True,
         )
     company_number: Mapped[str] = mapped_column(
@@ -440,4 +443,74 @@ class TaxManVatSubmissions(Base):
     datetime_submitted: Mapped[datetime] = mapped_column(
         DateTime,
         comment="The datetime of the submission to HMRC"
+        )
+    
+    # These are pulled from hmrc mtd
+    # https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/
+    # vat-api/1.0/oas/page#tag/organisations/operation/SubmitVATreturnforperiod
+    period_key: Mapped[str] = mapped_column(
+        String,
+        comment="The 'periodKey' on HMRC MTD API, will be 4 chars")
+    
+    vat_due_on_sales: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        comment="The VAT due on sales, vatDueSales key on HMRC MTD API, can "
+        "only be to 2 decimal places")
+    
+    vat_due_on_acquisitions: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        comment="The VAT due on acquisitions, vatDueAcquisitions key on HMRC "
+        "MTD API, will be a negative if any acquisitions, can only be to 2 "
+        "decimal places")
+    
+    total_vat_due: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        comment="The total VAT due for this period, the sum of sales "
+        "+ acquisitions, can only be to 2 decimal places")
+    
+    reclaimed_vat_curr_period: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        comment="The amount of VAT reclaimed in the current period, can only "
+        "be to 2 decimal places")
+    
+    net_vat_due: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        CheckConstraint("price >= 0", 
+                        name="price_positive"),
+        comment="The net value due for current period, the absolute difference"
+        " between total_vat_due and reclaimed_vat_curr_period, can only be to "
+        "2 decimal places")
+    
+    total_sales_value_ex_vat: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        CheckConstraint("amount >= 0 AND MOD(amount, 1) = 0", 
+                        name="amount_is_integer"),
+        comment="The total sales for period, excluding VAT, to 2 decimal "
+        "places, but both values 0, i.e. 123.00"
+        )
+    total_purchases_value_ex_vat: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        CheckConstraint("amount >= 0 AND MOD(amount, 1) = 0", 
+                        name="amount_is_integer"),
+        comment="The total purchases for period, excluding VAT, to 2 decimal "
+        "places, but both values 0, i.e. 123.00"
+        )
+    total_goods_supplied_value_ex_vat: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        CheckConstraint("amount >= 0 AND MOD(amount, 1) = 0", 
+                        name="amount_is_integer"),
+        comment="The total goods supplied for period, excluding VAT, to 2 "
+        "decimal places, but both values 0, i.e. 123.00"
+        )
+    total_acquisitions_ex_vat: Mapped[float] = mapped_column(
+        Numeric(10, 2),
+        CheckConstraint("amount >= 0 AND MOD(amount, 1) = 0", 
+                        name="amount_is_integer"),
+        comment="The total acquisitions for period, excluding VAT, to 2 "
+        "decimal places, but both values 0, i.e. 123.00"
+        )
+    finalised: Mapped[bool] = mapped_column(
+        Boolean,
+        comment="True if finalised, False otherwise, if not finalised, then "
+        "HMRC considers it an invalid submission and will return a 403 code",
         )

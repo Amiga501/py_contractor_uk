@@ -78,4 +78,9 @@ class Config:
     higher_tax_rate_pc = 40 
     super_tax_rate_pc = 45
     
+    hmrc_vat_url = "https://test-api.service.hmrc.gov.uk"
+    
+    hrmc_sandbox_client_id = "ky9lbF19hDyEkNh2O89ygoRW72Pk"
+    hmrc_sandbox_client_secret = "6f2df3ac-5daa-4637-8119-1fe9b5c61426"
+    
     
