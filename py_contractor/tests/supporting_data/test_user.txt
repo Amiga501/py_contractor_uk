@@ -1,0 +1,51 @@
+Generated individual
+Use these credentials in the OAuth Authorize flow to generate an OAuth access token for this individual.
+
+User ID
+
+291259462346
+
+Password
+
+RSkcLSQBVq1J
+
+Email Address
+
+alex.yorke@example.com
+
+VAT Registration Date
+
+2016-11-24
+
+Self Assessment UTR
+
+6883237105
+
+Individual Details
+
+{"firstName":"Alex","lastName":"Yorke","dateOfBirth":"1946-01-21","address":{"line1":"29 Chelsea Square","line2":"Nottingham","postcode":"TS23 1PA"}}
+
+Group Identifier
+
+502018813023
+
+VAT Registration Number
+
+573811530
+
+Full Name
+
+Alex Yorke
+
+Economic Operator Registration and Identification (EORI) number
+
+GB622699278394
+
+National Insurance Number (NINO)
+
+ZG489049A
+
+Making Tax Digital Income Tax ID
+
+XKIT00957720061
+
