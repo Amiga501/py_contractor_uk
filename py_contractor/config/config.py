@@ -49,14 +49,15 @@ def is_running_in_github_actions() -> bool:
 class Config:
     
     if not is_running_in_github_actions():
-        log_drive = host_drive_map.get(platform.node()) or Path.cwd().drive
+        hard_drive = host_drive_map.get(platform.node()) or Path.cwd().drive
         # This reverts to the drive holding the file if its not in explicit map
         
     else:
-        log_drive = os.getenv("GITHUB_WORKSPACE", os.getcwd())
-                
-    
-    LOG_DIR = str(Path(f"{log_drive}\\", "Logs", "py_contractor"))
+        hard_drive = os.getenv("GITHUB_WORKSPACE", os.getcwd())
+        
+    ENV_DIR = str(Path(hard_drive, "config_files", "py_contractor_uk", ".env"))
+                    
+    LOG_DIR = str(Path(f"{hard_drive}\\", "Logs", "py_contractor"))
     Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
     
     TEST_SUPPORTING_DATA = str(Path(library_dir,
