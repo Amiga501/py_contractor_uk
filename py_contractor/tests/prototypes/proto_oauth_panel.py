@@ -29,15 +29,15 @@ LOGGER = PrototypeTestLogger().logger
 pn.extension()
 
 # -----------------------------------------------------------------------------
-OAUTH_AUTHORIZE_URL = "https://test-www.tax.service.gov.uk/oauth/authorize"
+OAUTH_AUTHORISE_URL = "https://test-www.tax.service.gov.uk/oauth/authorize"
 OAUTH_TOKEN_URL = "https://test-api.service.hmrc.gov.uk/oauth/token"
 CLIENT_ID = Config.hrmc_sandbox_client_id
 REDIRECT_URI = "http://localhost:5006"
 SCOPE = "read:vat write:vat"  # example, depends on API
 
+CLIENT_SECRET = "ebed6ff7-818c-4d47-8d22-db7544d58e16"
+
 # -----------------------------------------------------------------------------
-code_verifier = None
-access_token = None
 
 
 # %% Functions
@@ -54,7 +54,7 @@ class Dashboard(pn.viewable.Viewer):
     
     # -------------------------------------------------------------------------
     def __init__(self, *,
-                 analyser: str = "Rabta",
+                 blah: str = "",
                  **params,
                  ):
         """!
@@ -62,12 +62,24 @@ class Dashboard(pn.viewable.Viewer):
 
         """
         self.logger = LOGGER
+        
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # These need to be imported from .env or similar - offload that to 
+        # config and let it handle the real source
+        self.client_secret = CLIENT_SECRET
+        self.client_id = CLIENT_ID
+        self.redirect_uri = REDIRECT_URI
+        self.scope = SCOPE
+        self.oauth_authorise_url = OAUTH_AUTHORISE_URL
+        self.oauth_token_url = OAUTH_TOKEN_URL
 
         self.template = pn.template.MaterialTemplate(
             title='Py Contractor',
             header_background='#015347',
             # favicon=FAVICON,
             )
+        
+        self.access_token = None
         
         self.__create_dashboard()
         
@@ -77,22 +89,21 @@ class Dashboard(pn.viewable.Viewer):
         **Create the dashboard**
         
         """
-        
-        
         self.status = pn.pane.Markdown("### Not logged in.")
+        
         login_button = pn.widgets.Button(
             name="Login with OAuth", 
             button_type="primary",
             )
         login_button.on_click(self.start_oauth)
         
-        layout = pn.Column(
+        self.layout = pn.Column(
             "## OAuth Login Example",
             login_button,
             self.status,
         )
         
-        self.template.main.append(layout)
+        self.template.main.append(self.layout)
             
     # -------------------------------------------------------------------------
     def create_template(self):
@@ -102,8 +113,34 @@ class Dashboard(pn.viewable.Viewer):
         All of this is actually done in the __create_dashboard() method
         
         """
+        pn.state.onload(lambda: self.handle_redirect())
         
-        return self.template
+        #return self.template    
+        return self.layout
+    
+    # -----------------------------------------------------------------------------
+    def exchange_code_for_token(self) -> str:
+        """!
+        Exchange authorization code for access token.
+        
+        @param [in] code [str]
+        @param [in] code_verifier [str]
+        
+        @return [str]
+        
+        """
+        data = {
+            "client_secret": self.client_secret,
+            "client_id": self.client_id,
+            "grant_type": "authorization_code",
+            "redirect_uri": self.redirect_uri,
+            "code": self.code,
+            "code_verifier": self.code_verifier,
+        }
+        with httpx.Client() as client:
+            resp = client.post(self.oauth_token_url, data=data)
+            resp.raise_for_status()
+            return resp.json().get("access_token")
         
     # -------------------------------------------------------------------------
     def generate_pkce(self):
@@ -119,70 +156,67 @@ class Dashboard(pn.viewable.Viewer):
         challenge = base64.urlsafe_b64encode(hashed).rstrip(b"=").decode()
         
         return verifier, challenge
-    
-    # -----------------------------------------------------------------------------
-    def handle_callback(self, request_handler: RequestHandler):
-        """
-        Panel automatically calls this when the user visits /oauth_callback.
         
-        """
-        global access_token
+    # -------------------------------------------------------------------------
+    def handle_redirect(self):
+        """!
+        **Check browser URL for OAuth redirect parameters and exchange code.**
         
-        args = request_handler.request.arguments
-        authorization_code = args.get("code", [None])[0]
-        returned_state = args.get("state", [None])[0]
+        """        
+        search = pn.state.location.search
+        if not search:
+            return
+        
+        params = urllib.parse.parse_qs(search[1:])  # remove ?
+        self.code = params.get("code", [None])[0]
+        returned_state = params.get("state", [None])[0]
 
-        if isinstance(authorization_code, bytes):
-            authorization_code = authorization_code.decode()
-        if isinstance(returned_state, bytes):
-            returned_state = returned_state.decode()
-    
-        if not authorization_code:
-            return pn.pane.Markdown("### No authorization code received.")
-    
-        if returned_state != self.state:
-            return pn.pane.Markdown("### State mismatch — possible CSRF detected!")
-    
-        # Exchange authorization code for tokens
-        data = {
-            "grant_type": "authorization_code",
-            "code": authorization_code,
-            "redirect_uri": REDIRECT_URI,
-            "client_id": CLIENT_ID,
-            "code_verifier": code_verifier,
-        }
-    
-        with httpx.Client() as client:
-            token_response = client.post(OAUTH_TOKEN_URL, data=data)
-            token_response.raise_for_status()
-            token_data = token_response.json()
-            access_token = token_data.get("access_token")
-    
-        LOGGER.info(
-            f"### Logged in!\n\nAccess Token:\n```\n{access_token}\n```")
-    
-        return pn.pane.Markdown(
-            "### Authentication complete! You may close this tab.")
+        # Retrieve state/code_verifier from hidden widgets
+        expected_state = pn.state.cache["secrets_state"]
+        self.code_verifier = pn.state.cache["secrets_verifier"]
+                
+        # Already handled or no code
+        if not self.code or self.access_token:
+            return
+
+        if returned_state != expected_state:
+            self.status.object = "### State mismatch — possible CSRF!"
+            return
+
+        try:
+            token = self.exchange_code_for_token()
+            self.access_token = token
+            self.status.object = "### Authentication complete! ✅"
+        except Exception as e:
+            self.status.object = f"### Error exchanging code: {e}"
         
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def start_oauth(self, event):
+        """!
+        **Start the OAuth journey**
         
+        """        
+        self.access_token = None
         self.code_verifier, self.code_challenge = self.generate_pkce()
         self.state = secrets.token_urlsafe(16)
+        
+        pn.state.cache["secrets_state"] = self.state
+        pn.state.cache["secrets_verifier"] = self.code_verifier
     
         params = {
             "response_type": "code",
-            "client_id": CLIENT_ID,
-            "redirect_uri": REDIRECT_URI,
-            "scope": SCOPE,
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+            "scope": self.scope,
             "state": self.state,
             "code_challenge": self.code_challenge,
             "code_challenge_method": "S256",
         }
     
-        url = f"{OAUTH_AUTHORIZE_URL}?{urllib.parse.urlencode(params)}"
+        url = f"{self.oauth_authorise_url}?{urllib.parse.urlencode(params)}"
         
         self.status.object = f"[Click here to authenticate]({url})"
+        
     
 
 # -----------------------------------------------------------------------------
@@ -190,49 +224,20 @@ def main_app() -> ServableMixin:
     """!
     **Main Viewer creation function**
 
-    """    
-    
+    """        
     app_ = Dashboard()
     
-    dashboard = app_.create_template()
-    
-    return dashboard
-
-
-# %% Script 
-
-app_ = main_app()
-
-
-# -------------------------------------------------------------------------
-def install_oauth_route(event):
-    app = pn.state.app
-    if getattr(app, "_oauth_route_installed", False):
-        return  # Prevent duplicate installs
-
-    class OAuthCallback(RequestHandler):
-        async def get(self):
-            await app_.handle_callback(self)
-
-    app.add_handlers(r".*", [(r"/oauth_callback", OAuthCallback)])
-    app._oauth_route_installed = True
-# -------------------------------------------------------------------------
-
-pn.state.on_session_created(install_oauth_route)
+    return app_.create_template()
 
 
 # %% Main
 if __name__ == "__main__":
     
-    pn.serve({"py_contractor": main_app},
-             port=5006,
-             oauth_redirect_uri=REDIRECT_URI,
-             # show=False,
-             threaded=True,
-             n_threads=4,
-             # num_procs=4,  # Of course, on Windows limited to == 1
-             # probably due to thread spawn
-             )
+    pn.serve(
+        main_app,
+        port=5006,
+        threaded=True,
+        )
 
 else:
     main_app().servable()
