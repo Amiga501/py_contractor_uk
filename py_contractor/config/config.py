@@ -55,7 +55,7 @@ class Config:
     else:
         hard_drive = os.getenv("GITHUB_WORKSPACE", os.getcwd())
         
-    ENV_DIR = str(Path(hard_drive, "config_files", "py_contractor_uk", ".env"))
+    ENV_FILE = str(Path(hard_drive, "config_files", "py_contractor_uk", ".env"))
                     
     LOG_DIR = str(Path(f"{hard_drive}\\", "Logs", "py_contractor"))
     Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
